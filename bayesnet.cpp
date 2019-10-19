@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <map>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -19,6 +20,7 @@ private:
 	vector<string> Parents; // Parents of a particular node- note these are names of parents
 	int nvalues;  // Number of categories a variable represented by this node can take
 	vector<string> values; // Categories of possible values
+	vector<int> indep_prob; //Individual Probabilities of values
 	vector<float> CPT; // conditional probability table as a 1-d array . Look for BIF format to understand its meaning
 
 public:
@@ -52,6 +54,14 @@ public:
 
 	vector<string> get_values(){
 		return values;
+	}
+
+	vector<int> get_indep(){
+		return indep_prob;
+	}
+
+	void set_indep(vector<int> indep){
+		indep_prob = indep;
 	}
 
 	void set_CPT(vector<float> new_CPT){
@@ -218,16 +228,49 @@ vector<vector<string>> read_data(){
 	return data;
 }
 
+void independent_probability(Network net, vector<vector<string>> data){
+	vector<map<string,int>> val_count;
+	int net_size = net.netSize();
+	vector<string>::iterator it;
+	map<string,int>::iterator mit;
+	for(int i=0;i<net_size;i++){
+		map<string,int> values_count;
+		vector<string> values = net.get_nth_node(i)->get_values();
+		for(it=values.begin();it!=values.end();it++){
+			values_count.insert({*it,0});
+		}
+		val_count.push_back(values_count);
+	}
+	for(int i=0;i<data.size();i++){
+		for(int j=0;j<net_size;j++){
+			string entry = data[i][j];
+			if(entry!="?"){
+				val_count[j][entry]++;
+			}
+		}
+	}
+	for(int i=0;i<net_size;i++){
+		int total=0;
+		for(mit=val_count[i].begin();mit!=val_count[i].end();mit++){
+			total = (*mit).second;
+		}
+		vector<int> temp;
+		for(mit=val_count[i].begin();mit!=val_count[i].end();mit++){
+			int prob = (*mit).second/total;
+			temp.push_back(prob);
+		}
+		net.get_nth_node(i)->set_indep(temp);
+	}
+
+}
+
 
 int main()
 {
 	Network Alarm;
 	Alarm=read_network();
 	vector<vector<string>> data = read_data();
-	for(auto s:data[0]){
-		cout << s << " ";
-	}
-	cout << "\n";
+	independent_probability(Alarm,data);
 }
 
 
