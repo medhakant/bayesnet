@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <algorithm>
 
 
 // Format checker just assumes you have Alarm.bif and Solved_Alarm.bif (your file) in current directory
@@ -171,7 +172,69 @@ public:
 			this->get_nth_node(i)->set_indep(temp);
 		}
 
-	}	
+	}
+
+	void counter(vector<string> col_names,int col_num,vector<float> &count,int low,int high,vector<string> row,float multiplier){
+		int index = get_index(col_names[col_num]);
+		vector<string> values = get_nth_node(index)->get_values();
+		vector<string>::iterator it = find(values.begin(), values.end(), row[index]);
+		int block_size = (high-low+1)/values.size();
+		if(block_size==1){
+			if(it!=values.end()){
+				count[low+distance(values.begin(), it)] += multiplier*1;
+				return;
+			}else{
+				vector<float> indep_prob = get_nth_node(index)->get_indep();
+				for(int i=0;i<indep_prob.size();i++){
+					count[low+i] += multiplier*indep_prob[i];
+				}
+				return;
+			}
+		}else{
+			if(it!=values.end()){
+				int d = distance(values.begin(), it);
+				counter(col_names,col_num+1,count,low+(d*block_size),low+((d+1)*block_size),row,multiplier);
+			}else{
+				vector<float> indep_prob = get_nth_node(index)->get_indep();
+				for(int i=0;i<indep_prob.size();i++){
+					counter(col_names,col_num+1,count,low+(i*block_size),low+((i+1)*block_size),row,multiplier*indep_prob[i]);
+				}
+			}
+		}
+
+	}
+
+	void conditional_probability(vector<vector<string>> data){
+		int net_size = this->netSize();
+		for(int i=1;i<2;i++){
+			list<Graph_Node>::iterator Node = this->get_nth_node(i);
+			vector<float> CPT_count;
+			int nvalues = Node->get_nvalues();
+			float total[nvalues];
+			int cpt_size = Node->get_CPT().size();
+			for(int j=0;j<nvalues;j++){
+				total[j]=0;
+			}
+			for(int j=0;j<cpt_size;j++){
+				CPT_count.push_back(0);
+			}
+			vector<string> columns = Node->get_Parents();
+			columns.insert(columns.begin(),Node->get_name());
+			for(int j=0;j<data.size();j++){
+				counter(columns,0,CPT_count,0,cpt_size-1,data[j],1);
+			}
+			for(int j=0;j<cpt_size;j++){
+				total[j%nvalues] += CPT_count[j];
+			}
+			for(int j=0;j<cpt_size;j++){
+				CPT_count[j] = CPT_count[j]/total[j%nvalues];
+			}
+			Node->set_CPT(CPT_count);
+
+		}
+		
+
+	}		
 
 };
 
@@ -275,11 +338,19 @@ int main()
 	Alarm=read_network();
 	vector<vector<string>> data = read_data();
 	Alarm.independent_probability(data);
-	vector<float> temp = Alarm.get_nth_node(1)->get_indep();
-	for(auto i:temp){
+	vector<float> prob = Alarm.get_nth_node(1)->get_CPT();
+	for(auto i:prob){
 		cout << i << " ";
 	}
 	cout << "\n";
+	Alarm.conditional_probability(data);
+	vector<float> nprob = Alarm.get_nth_node(1)->get_CPT();
+	for(auto i:nprob){
+		cout << i << " ";
+	}
+	cout << "\n";
+
+	
 }
 
 
