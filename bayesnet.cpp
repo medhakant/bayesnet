@@ -206,12 +206,12 @@ public:
 
 	void conditional_probability(vector<vector<string>> data){
 		int net_size = this->netSize();
-		for(int i=1;i<2;i++){
+		for(int i=0;i<net_size;i++){
 			list<Graph_Node>::iterator Node = this->get_nth_node(i);
 			vector<float> CPT_count;
 			int nvalues = Node->get_nvalues();
-			float total[nvalues];
 			int cpt_size = Node->get_CPT().size();
+			float total[(cpt_size/nvalues)];
 			for(int j=0;j<nvalues;j++){
 				total[j]=0;
 			}
@@ -224,10 +224,13 @@ public:
 				counter(columns,0,CPT_count,0,cpt_size-1,data[j],1);
 			}
 			for(int j=0;j<cpt_size;j++){
-				total[j%nvalues] += CPT_count[j];
+				if(CPT_count[j]==0){
+					CPT_count[j] = 1;
+				}
+				total[j%(cpt_size/nvalues)] += CPT_count[j];
 			}
 			for(int j=0;j<cpt_size;j++){
-				CPT_count[j] = CPT_count[j]/total[j%nvalues];
+				CPT_count[j] = CPT_count[j]/total[j%(cpt_size/nvalues)];
 			}
 			Node->set_CPT(CPT_count);
 
@@ -238,11 +241,11 @@ public:
 
 };
 
-Network read_network(){
+Network read_network(string inputf){
 	Network Alarm;
 	string line;
 	int find=0;
-  	ifstream myfile("alarm.bif"); 
+  	ifstream myfile(inputf); 
   	string temp;
   	string name;
   	vector<string> values;
@@ -312,10 +315,10 @@ Network read_network(){
   	return Alarm;
 }
 
-vector<vector<string>> read_data(){
+vector<vector<string>> read_data(string dataf){
 	vector<vector<string>> data;
     string line;
-    ifstream datafile("records.dat"); 
+    ifstream datafile(dataf); 
   	string temp;
     while(getline(datafile,line)){
         istringstream ss(line);
@@ -329,27 +332,37 @@ vector<vector<string>> read_data(){
 	return data;
 }
 
+void output(string inputf,Network Alarm){
+	ifstream infile(inputf);
+	ofstream myfile;
+	myfile.open("solved_alarm.bif");
+	string line;
+	int countt = 0;
+	while (std::getline(infile, line)){
+		if (line.find("table") != string::npos) {
+			myfile << "	table " ;
+			for(int j = 0; j < Alarm.get_nth_node(countt)->get_CPT().size(); j++){
+				myfile << Alarm.get_nth_node(countt)->get_CPT()[j] << " ";
+			}
+			myfile << ";\n";
+			countt++;
+		}else{
+			myfile << line << "\n";
+		}
+	}
+}
 
 
 
-int main()
+
+int main(int argc, char** argv)
 {
 	Network Alarm;
-	Alarm=read_network();
-	vector<vector<string>> data = read_data();
+	Alarm=read_network(argv[1]);
+	vector<vector<string>> data = read_data(argv[2]);
 	Alarm.independent_probability(data);
-	vector<float> prob = Alarm.get_nth_node(1)->get_CPT();
-	for(auto i:prob){
-		cout << i << " ";
-	}
-	cout << "\n";
 	Alarm.conditional_probability(data);
-	vector<float> nprob = Alarm.get_nth_node(1)->get_CPT();
-	for(auto i:nprob){
-		cout << i << " ";
-	}
-	cout << "\n";
-
+	output(argv[1],Alarm);
 	
 }
 
