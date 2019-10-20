@@ -21,8 +21,8 @@ private:
 	vector<string> Parents; // Parents of a particular node- note these are names of parents
 	int nvalues;  // Number of categories a variable represented by this node can take
 	vector<string> values; // Categories of possible values
-	vector<float> indep_prob; //Individual Probabilities of values
-	vector<float> CPT; // conditional probability table as a 1-d array . Look for BIF format to understand its meaning
+	vector<double> indep_prob; //Individual Probabilities of values
+	vector<double> CPT; // conditional probability table as a 1-d array . Look for BIF format to understand its meaning
 
 public:
 	// Constructor- a node is initialised with its name and its categories
@@ -45,7 +45,7 @@ public:
 		return Parents;
 	}
 
-	vector<float> get_CPT(){
+	vector<double> get_CPT(){
 		return CPT;
 	}
 
@@ -57,15 +57,15 @@ public:
 		return values;
 	}
 
-	vector<float> get_indep(){
+	vector<double> get_indep(){
 		return indep_prob;
 	}
 
-	void set_indep(vector<float> indep){
+	void set_indep(vector<double> indep){
 		indep_prob = indep;
 	}
 
-	void set_CPT(vector<float> new_CPT){
+	void set_CPT(vector<double> new_CPT){
 		CPT.clear();
 		CPT=new_CPT;
 	}
@@ -137,12 +137,12 @@ public:
     }
 
 	void independent_probability(vector<vector<string>> data){
-		vector<map<string,float>> val_count;
+		vector<map<string,double>> val_count;
 		int net_size = this->netSize();
 		vector<string>::iterator it;
-		map<string,float>::iterator mit;
+		map<string,double>::iterator mit;
 		for(int i=0;i<net_size;i++){
-			map<string,float> values_count;
+			map<string,double> values_count;
 			vector<string> values = this->get_nth_node(i)->get_values();
 			for(it=values.begin();it!=values.end();it++){
 				values_count.insert({*it,0});
@@ -160,13 +160,13 @@ public:
 		}
 
 		for(int i=0;i<net_size;i++){
-			float total=0.0;
+			double total=0.0;
 			for(mit=val_count[i].begin();mit!=val_count[i].end();mit++){
 				total += (*mit).second;
 			}
-			vector<float> temp;
+			vector<double> temp;
 			for(mit=val_count[i].begin();mit!=val_count[i].end();mit++){
-				float prob = (*mit).second/total;
+				double prob = (*mit).second/total;
 				temp.push_back(prob);
 			}
 			this->get_nth_node(i)->set_indep(temp);
@@ -174,7 +174,7 @@ public:
 
 	}
 
-	void counter(vector<string> col_names,int col_num,vector<float> &count,int low,int high,vector<string> row,float multiplier){
+	void counter(vector<string> col_names,int col_num,vector<double> &count,int low,int high,vector<string> row,double multiplier){
 		int index = get_index(col_names[col_num]);
 		vector<string> values = get_nth_node(index)->get_values();
 		vector<string>::iterator it = find(values.begin(), values.end(), row[index]);
@@ -184,7 +184,7 @@ public:
 				count[low+distance(values.begin(), it)] += multiplier*1;
 				return;
 			}else{
-				vector<float> indep_prob = get_nth_node(index)->get_indep();
+				vector<double> indep_prob = get_nth_node(index)->get_indep();
 				for(int i=0;i<indep_prob.size();i++){
 					count[low+i] += multiplier*indep_prob[i];
 				}
@@ -195,10 +195,18 @@ public:
 				int d = distance(values.begin(), it);
 				counter(col_names,col_num+1,count,low+(d*block_size),low+((d+1)*block_size),row,multiplier);
 			}else{
-				vector<float> indep_prob = get_nth_node(index)->get_indep();
+				vector<double> indep_prob = get_nth_node(index)->get_indep();
 				for(int i=0;i<indep_prob.size();i++){
 					counter(col_names,col_num+1,count,low+(i*block_size),low+((i+1)*block_size),row,multiplier*indep_prob[i]);
 				}
+				// int max_index = 0;
+				// float max_elem = -1;
+				// for(int i=0;i<indep_prob.size();i++){
+				// 	if(indep_prob[i]>max_elem){
+				// 		max_index = i;
+				// 	}
+				// }
+				// counter(col_names,col_num+1,count,low+(max_index*block_size),low+((max_index+1)*block_size),row,multiplier);
 			}
 		}
 
@@ -208,12 +216,16 @@ public:
 		int net_size = this->netSize();
 		for(int i=0;i<net_size;i++){
 			list<Graph_Node>::iterator Node = this->get_nth_node(i);
-			vector<float> CPT_count;
+			vector<double> CPT_count;
 			int nvalues = Node->get_nvalues();
 			int cpt_size = Node->get_CPT().size();
-			float total[(cpt_size/nvalues)];
-			for(int j=0;j<nvalues;j++){
+			double total[(cpt_size/nvalues)];
+			vector<double> indep_total;
+			for(int j=0;j<(cpt_size/nvalues);j++){
 				total[j]=0;
+			}
+			for(int j=0;j<nvalues;j++){
+				indep_total.push_back(0);
 			}
 			for(int j=0;j<cpt_size;j++){
 				CPT_count.push_back(0);
@@ -224,15 +236,32 @@ public:
 				counter(columns,0,CPT_count,0,cpt_size-1,data[j],1);
 			}
 			for(int j=0;j<cpt_size;j++){
-				if(CPT_count[j]==0){
-					CPT_count[j] = 1;
-				}
+				CPT_count[j] +=0.1;
 				total[j%(cpt_size/nvalues)] += CPT_count[j];
+				indep_total[j%nvalues] += CPT_count[j];
 			}
 			for(int j=0;j<cpt_size;j++){
-				CPT_count[j] = CPT_count[j]/total[j%(cpt_size/nvalues)];
+				CPT_count[j] = abs(CPT_count[j]/total[j%(cpt_size/nvalues)]);
+				if(CPT_count[j]==0){
+					CPT_count[j]=0.0001;
+				}else if(CPT_count[j]==1){
+					CPT_count[j]=1-(((cpt_size/nvalues)-1)*0.0001);
+				}
+
+				if(isnan(CPT_count[j])){
+					CPT_count[j]=0.0001;
+				}
+								
 			}
+			double t = 0;
+			for(int j=0;j<nvalues;j++){
+				t += indep_total[j]; 
+			}
+			for(int j=0;j<nvalues;j++){
+				indep_total[j] = indep_total[j]/t;
+			}			
 			Node->set_CPT(CPT_count);
+			Node->set_indep(indep_total);
 
 		}
 		
@@ -300,7 +329,7 @@ Network read_network(string inputf){
 				ss2.str(line);
 				ss2>> temp;                    
 				ss2>> temp;                    
-				vector<float> curr_CPT;
+				vector<double> curr_CPT;
 				string::size_type sz;
 				while(temp.compare(";")!=0){                        
 					curr_CPT.push_back(atof(temp.c_str()));     					
@@ -329,6 +358,7 @@ vector<vector<string>> read_data(string dataf){
 		}
 		data.push_back(row);
 	}
+	datafile.close();
 	return data;
 }
 
@@ -338,18 +368,30 @@ void output(string inputf,Network Alarm){
 	myfile.open("solved_alarm.bif");
 	string line;
 	int countt = 0;
-	while (std::getline(infile, line)){
+	bool flag = true;
+	while (getline(infile, line)){
 		if (line.find("table") != string::npos) {
-			myfile << "	table " ;
+			myfile << "\n	table " ;
 			for(int j = 0; j < Alarm.get_nth_node(countt)->get_CPT().size(); j++){
-				myfile << Alarm.get_nth_node(countt)->get_CPT()[j] << " ";
+				float x = round( Alarm.get_nth_node(countt)->get_CPT()[j] * 10000.0 ) / 10000.0;
+				if(x==0){
+					x=0.001;
+				}
+				myfile << x << " ";
 			}
-			myfile << ";\n";
+			myfile << ";";
 			countt++;
 		}else{
-			myfile << line << "\n";
+			if(flag){
+				myfile << line;
+				flag = false;
+			}else{
+				myfile << "\n" << line;
+			}
 		}
 	}
+	myfile.close();
+	infile.close();
 }
 
 
@@ -359,7 +401,9 @@ int main(int argc, char** argv)
 	Alarm=read_network(argv[1]);
 	vector<vector<string>> data = read_data(argv[2]);
 	Alarm.independent_probability(data);
-	Alarm.conditional_probability(data);
+	for(int i=0;i<20;i++){
+		Alarm.conditional_probability(data);
+	}
 	output(argv[1],Alarm);
 	
 }

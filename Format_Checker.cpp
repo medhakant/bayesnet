@@ -380,8 +380,9 @@ int main()
         list<Graph_Node>::iterator listIt2=Alarm2.get_nth_node(i);
         vector<float> cpt1=listIt1->get_CPT();
         vector<float> cpt2=listIt2->get_CPT();
-        for(int j=0;j<cpt1.size();j++)
+        for(int j=0;j<cpt1.size();j++){
             score+=fabs(cpt1[j]-cpt2[j]);
+        }
     }
    cout <<"Score is "<<score;
 
