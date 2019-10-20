@@ -329,7 +329,31 @@ vector<vector<string>> read_data(){
 	return data;
 }
 
-
+void output(network Alarm){
+	ifstream infile("alarm.bif");
+	ofstream myfile;
+	myfile.open("sample_alarm.bif");
+	string line;
+	int countt = 0;
+	while (std::getline(infile, line)){
+		if (line.find("table") != string::npos) {
+			myfile << "	table " ;
+			// for(int k = 0; k < 10; k++){
+			// 	myfile << k << " ";
+			// }
+			for(int j = 0; j < Alarm.get_nth_node(countt)->get_CPT().size(); j++){
+				myfile << Alarm.get_nth_node(countt)->get_CPT()[j] << " ";
+			}
+			myfile << ";\n";
+			countt++;
+			// cout << count << endl;
+		}
+		else{
+			myfile << line << "\n";
+		}
+	}
+	cout << "Done !!!"  << endl;
+}
 
 
 int main()
