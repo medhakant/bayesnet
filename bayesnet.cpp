@@ -186,7 +186,7 @@ public:
 			}else{
 				vector<double> indep_prob = get_nth_node(index)->get_indep();
 				for(int i=0;i<indep_prob.size();i++){
-					count[low+i] += multiplier*indep_prob[i];
+					count[low+i] += multiplier*indep_prob[i]/100;
 				}
 				return;
 			}
@@ -197,7 +197,7 @@ public:
 			}else{
 				vector<double> indep_prob = get_nth_node(index)->get_indep();
 				for(int i=0;i<indep_prob.size();i++){
-					counter(col_names,col_num+1,count,low+(i*block_size),low+((i+1)*block_size),row,multiplier*indep_prob[i]);
+					counter(col_names,col_num+1,count,low+(i*block_size),low+((i+1)*block_size),row,multiplier*indep_prob[i]/100);
 				}
 				// int max_index = 0;
 				// float max_elem = -1;
@@ -206,7 +206,7 @@ public:
 				// 		max_index = i;
 				// 	}
 				// }
-				// counter(col_names,col_num+1,count,low+(max_index*block_size),low+((max_index+1)*block_size),row,multiplier);
+				// counter(col_names,col_num+1,count,low+(max_index*block_size),low+((max_index+1)*block_size),row,multiplier/20);
 			}
 		}
 
@@ -236,16 +236,15 @@ public:
 				counter(columns,0,CPT_count,0,cpt_size-1,data[j],1);
 			}
 			for(int j=0;j<cpt_size;j++){
-				CPT_count[j] +=0.1;
 				total[j%(cpt_size/nvalues)] += CPT_count[j];
 				indep_total[j%nvalues] += CPT_count[j];
 			}
 			for(int j=0;j<cpt_size;j++){
 				CPT_count[j] = abs(CPT_count[j]/total[j%(cpt_size/nvalues)]);
 				if(CPT_count[j]==0){
-					CPT_count[j]=0.0001;
+					CPT_count[j]=0.00001;
 				}else if(CPT_count[j]==1){
-					CPT_count[j]=1-(((cpt_size/nvalues)-1)*0.0001);
+					CPT_count[j]=1-(((cpt_size/nvalues)-1)*0.00001);
 				}
 
 				if(isnan(CPT_count[j])){
@@ -375,7 +374,7 @@ void output(string inputf,Network Alarm){
 			for(int j = 0; j < Alarm.get_nth_node(countt)->get_CPT().size(); j++){
 				float x = round( Alarm.get_nth_node(countt)->get_CPT()[j] * 10000.0 ) / 10000.0;
 				if(x==0){
-					x=0.001;
+					x=0.00001;
 				}
 				myfile << x << " ";
 			}
@@ -401,7 +400,7 @@ int main(int argc, char** argv)
 	Alarm=read_network(argv[1]);
 	vector<vector<string>> data = read_data(argv[2]);
 	Alarm.independent_probability(data);
-	for(int i=0;i<20;i++){
+	for(int i=0;i<10;i++){
 		Alarm.conditional_probability(data);
 	}
 	output(argv[1],Alarm);
