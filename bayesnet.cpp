@@ -355,6 +355,16 @@ void output(network Alarm){
 	cout << "Done !!!"  << endl;
 }
 
+float error(network i1, network i2){
+	float res = 0.0;
+	for(int i = 0; i < i1.netSize(); i++){
+		for(int j = 0; j < i1.get_nth_node(i)->get_CPT().size(); j++){
+			res += fabs(i1.get_nth_node(i)->get_CPT()[j] - i2.get_nth_node(i)->get_CPT()[j]);
+		}
+	}
+	return res;
+}
+
 
 int main()
 {
