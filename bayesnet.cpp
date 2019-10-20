@@ -186,7 +186,7 @@ public:
 			}else{
 				vector<double> indep_prob = get_nth_node(index)->get_indep();
 				for(int i=0;i<indep_prob.size();i++){
-					count[low+i] += multiplier*indep_prob[i]/100;
+					count[low+i] += multiplier*indep_prob[i]/200;
 				}
 				return;
 			}
@@ -197,16 +197,8 @@ public:
 			}else{
 				vector<double> indep_prob = get_nth_node(index)->get_indep();
 				for(int i=0;i<indep_prob.size();i++){
-					counter(col_names,col_num+1,count,low+(i*block_size),low+((i+1)*block_size),row,multiplier*indep_prob[i]/100);
+					counter(col_names,col_num+1,count,low+(i*block_size),low+((i+1)*block_size),row,multiplier*indep_prob[i]/200);
 				}
-				// int max_index = 0;
-				// float max_elem = -1;
-				// for(int i=0;i<indep_prob.size();i++){
-				// 	if(indep_prob[i]>max_elem){
-				// 		max_index = i;
-				// 	}
-				// }
-				// counter(col_names,col_num+1,count,low+(max_index*block_size),low+((max_index+1)*block_size),row,multiplier/20);
 			}
 		}
 
